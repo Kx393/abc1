@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" style="background-color: #020617; color: #f8fafc; height: 100%;">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,30 +9,100 @@
     <meta property="og:description" content="An interactive 4x4 stage mystery grid game for event anchors and MCs featuring trivia, audiovisual challenges, live score tracking, and dramatic game-modifying twist cards." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
-  </head>
-  <body class="bg-slate-950 text-slate-100">
-    <div id="root"></div>
+
+    <style>
+      /* Ensure zero white background flash under any loading or network condition */
+      html, body {
+        background-color: #020617 !important;
+        color: #f8fafc !important;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      }
+    </style>
+
     <script>
-      window.addEventListener('error', function(e) {
-        if (e.message && (e.message.includes('main.tsx') || e.message.includes('MIME type') || e.message.includes('SyntaxError'))) {
+      // Automatic detection for GitHub Pages:
+      // If GitHub Pages is serving the raw repo root instead of /docs or GitHub Actions compiled build,
+      // seamlessly load the pre-compiled /docs/ build so the app runs immediately.
+      (function() {
+        try {
+          var isGithubPages = window.location.hostname.endsWith('github.io');
+          var isNotDocs = window.location.pathname.indexOf('/docs') === -1;
+          var isRawSource = !document.querySelector('script[src*="assets/"]');
+
+          if (isGithubPages && isNotDocs && isRawSource) {
+            var path = window.location.pathname;
+            if (!path.endsWith('/')) {
+              path += '/';
+            }
+            window.location.replace(window.location.origin + path + 'docs/' + window.location.search + window.location.hash);
+          }
+        } catch (e) {
+          console.warn('Auto-redirect check:', e);
+        }
+      })();
+    </script>
+  </head>
+  <body class="bg-slate-950 text-slate-100" style="background-color: #020617; color: #f8fafc; margin: 0; min-height: 100vh;">
+    <div id="root"></div>
+
+    <!-- Diagnostic and Fallback Display (shows only if raw TypeScript cannot be run by static host) -->
+    <script>
+      (function() {
+        function showSetupGuide() {
           var root = document.getElementById('root');
-          if (root && !root.hasChildNodes()) {
-            root.innerHTML = '<div style="color: #f8fafc; background: #020617; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: system-ui, sans-serif; text-align: center; padding: 2rem;">' +
-              '<div style="font-size: 3rem; margin-bottom: 1rem;">⚙️</div>' +
-              '<h1 style="font-size: 1.5rem; font-weight: 800; color: #f59e0b; margin-bottom: 0.5rem;">One-Time GitHub Pages Setup Required</h1>' +
-              '<p style="max-width: 520px; color: #94a3b8; font-size: 1rem; line-height: 1.6; margin-bottom: 1.5rem;">' +
-              'GitHub Pages is currently serving raw source code instead of the compiled build.<br/><br/>' +
-              'To fix this in 10 seconds:<br/>' +
-              '1. Go to your GitHub repository &rarr; <strong>Settings</strong> &rarr; <strong>Pages</strong>.<br/>' +
-              '2. Under <strong>Build and deployment</strong> &rarr; <strong>Source</strong>, select <strong>GitHub Actions</strong>.<br/>' +
-              '3. Wait ~1 minute for the Actions workflow to finish, then refresh this page!' +
+          if (root && (!root.hasChildNodes() || root.children.length === 0)) {
+            var currentPath = window.location.pathname;
+            if (!currentPath.endsWith('/')) currentPath += '/';
+            var docsUrl = currentPath + 'docs/';
+
+            root.innerHTML = '<div style="color: #f8fafc; background: radial-gradient(circle at top, #1e1b4b 0%, #020617 70%); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2rem; box-sizing: border-box;">' +
+              '<div style="max-width: 580px; width: 100%; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 24px; padding: 2.5rem 2rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); backdrop-filter: blur(12px);">' +
+              '<div style="font-size: 2.8rem; margin-bottom: 0.75rem;">🎭 ⚡</div>' +
+              '<h1 style="font-size: 1.5rem; font-weight: 800; color: #f59e0b; margin: 0 0 0.5rem 0; letter-spacing: -0.02em;">StageGrid AI · Launch on GitHub Pages</h1>' +
+              '<p style="color: #94a3b8; font-size: 0.95rem; line-height: 1.6; margin: 0 0 1.75rem 0;">' +
+              'GitHub Pages is currently serving the raw source code instead of the compiled stage build.' +
               '</p>' +
+              '<div style="margin-bottom: 1.75rem;">' +
+              '<a href="' + docsUrl + '" style="display: inline-block; background: linear-gradient(135deg, #f59e0b, #f43f5e); color: #020617; font-weight: 800; font-size: 0.95rem; padding: 0.85rem 1.75rem; border-radius: 14px; text-decoration: none; box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3); transition: transform 0.15s ease;">' +
+              '▶ Click Here to Open Pre-Built App (/docs)' +
+              '</a>' +
+              '</div>' +
+              '<div style="background: rgba(2, 6, 23, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 1.25rem; text-align: left; font-size: 0.85rem; color: #cbd5e1; line-height: 1.6;">' +
+              '<strong style="color: #fbbf24; display: block; margin-bottom: 0.5rem;">To make the main URL load directly:</strong>' +
+              '<ol style="margin: 0; padding-left: 1.25rem;">' +
+              '<li style="margin-bottom: 0.35rem;">Go to your GitHub repo &rarr; <strong>Settings</strong> &rarr; <strong>Pages</strong>.</li>' +
+              '<li style="margin-bottom: 0.35rem;">Under <strong>Build and deployment &rarr; Source</strong>, choose <strong>GitHub Actions</strong> (or choose <strong>Branch: main / Folder: /docs</strong>).</li>' +
+              '<li>Wait 1 minute for GitHub to finish building, then refresh!</li>' +
+              '</ol>' +
+              '</div>' +
+              '</div>' +
               '</div>';
           }
         }
-      });
+
+        // Capture script module loading errors
+        window.addEventListener('error', function(e) {
+          if (e.target && (e.target.tagName === 'SCRIPT' || e.target.src)) {
+            showSetupGuide();
+          }
+        }, true);
+
+        // Fallback: If raw source does not mount within 1.5 seconds on static hosting, display guide
+        setTimeout(function() {
+          var isStaticHost = !window.location.hostname.includes('localhost') && 
+                             !window.location.hostname.includes('127.0.0.1') && 
+                             !window.location.hostname.includes('run.app');
+          var isRawSource = !document.querySelector('script[src*="assets/"]');
+          if (isStaticHost && isRawSource) {
+            showSetupGuide();
+          }
+        }, 1500);
+      })();
     </script>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-
