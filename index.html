@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>StageGrid AI - Event Anchor Mystery Matrix & Twist Game</title>
+    <meta name="description" content="An interactive 4x4 stage mystery grid game for event anchors and MCs featuring trivia, audiovisual challenges, live score tracking, and dramatic game-modifying twist cards." />
+    <meta property="og:title" content="StageGrid AI - Event Anchor Mystery Matrix & Twist Game" />
+    <meta property="og:description" content="An interactive 4x4 stage mystery grid game for event anchors and MCs featuring trivia, audiovisual challenges, live score tracking, and dramatic game-modifying twist cards." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body class="bg-slate-950 text-slate-100">
+    <div id="root"></div>
+    <script>
+      window.addEventListener('error', function(e) {
+        if (e.message && (e.message.includes('main.tsx') || e.message.includes('MIME type') || e.message.includes('SyntaxError'))) {
+          var root = document.getElementById('root');
+          if (root && !root.hasChildNodes()) {
+            root.innerHTML = '<div style="color: #f8fafc; background: #020617; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: system-ui, sans-serif; text-align: center; padding: 2rem;">' +
+              '<div style="font-size: 3rem; margin-bottom: 1rem;">⚙️</div>' +
+              '<h1 style="font-size: 1.5rem; font-weight: 800; color: #f59e0b; margin-bottom: 0.5rem;">One-Time GitHub Pages Setup Required</h1>' +
+              '<p style="max-width: 520px; color: #94a3b8; font-size: 1rem; line-height: 1.6; margin-bottom: 1.5rem;">' +
+              'GitHub Pages is currently serving raw source code instead of the compiled build.<br/><br/>' +
+              'To fix this in 10 seconds:<br/>' +
+              '1. Go to your GitHub repository &rarr; <strong>Settings</strong> &rarr; <strong>Pages</strong>.<br/>' +
+              '2. Under <strong>Build and deployment</strong> &rarr; <strong>Source</strong>, select <strong>GitHub Actions</strong>.<br/>' +
+              '3. Wait ~1 minute for the Actions workflow to finish, then refresh this page!' +
+              '</p>' +
+              '</div>';
+          }
+        }
+      });
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

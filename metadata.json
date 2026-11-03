@@ -1,0 +1,8 @@
+{
+  "name": "Remix StageGrid AI - Event Anchor Mystery Matrix \u0026 Twist Game",
+  "description": "An interactive 4x4 stage mystery grid game for event anchors and MCs featuring trivia, audiovisual challenges, live score tracking, and dramatic game-modifying twist cards.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
