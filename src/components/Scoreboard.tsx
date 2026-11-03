@@ -39,8 +39,10 @@ interface ScoreboardProps {
   currentPackName: string;
   isHostXrayActive: boolean;
   syncStatus?: 'saved' | 'saving' | 'synced' | 'error' | 'idle';
+  storageType?: 'cloud' | 'local';
   lastSavedAt?: string | null;
   onManualSave?: () => void;
+  onOpenStorageModal?: () => void;
 }
 
 export const Scoreboard: React.FC<ScoreboardProps> = ({
@@ -57,8 +59,10 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({
   currentPackName,
   isHostXrayActive,
   syncStatus = 'saved',
+  storageType = 'local',
   lastSavedAt,
   onManualSave,
+  onOpenStorageModal,
 }) => {
   const [muted, setMutedState] = React.useState(getIsMuted());
 
@@ -88,23 +92,21 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({
               </span>
               <span className="text-slate-600 text-[10px]">·</span>
               
-              {/* Server Sync Status Badge */}
+              {/* Storage & Sync Status Badge */}
               <button
                 type="button"
-                onClick={onManualSave}
+                onClick={onOpenStorageModal || onManualSave}
                 title={
                   syncStatus === 'saving'
-                    ? 'Saving changes to server...'
-                    : syncStatus === 'error'
-                    ? 'Server unreachable - saved locally in browser cache. Click to retry.'
-                    : `Saved to server. Click to force instant save.`
+                    ? 'Saving changes...'
+                    : storageType === 'cloud'
+                    ? 'Connected to Cloud Server. Click to view storage settings.'
+                    : 'Saved to browser persistent storage. Survives page reloads. Click to view storage settings.'
                 }
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all cursor-pointer border ${
+                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold transition-all cursor-pointer border ${
                   syncStatus === 'saving'
                     ? 'bg-amber-500/10 border-amber-500/40 text-amber-300 animate-pulse'
-                    : syncStatus === 'error'
-                    ? 'bg-rose-500/10 border-rose-500/40 text-rose-300'
-                    : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20'
+                    : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20 shadow-sm'
                 }`}
               >
                 {syncStatus === 'saving' ? (
@@ -112,15 +114,15 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({
                     <CloudUpload className="w-3 h-3 text-amber-400 animate-bounce" />
                     <span>Saving...</span>
                   </>
-                ) : syncStatus === 'error' ? (
+                ) : storageType === 'cloud' ? (
                   <>
-                    <CloudOff className="w-3 h-3 text-rose-400" />
-                    <span>Local Cache</span>
+                    <Cloud className="w-3 h-3 text-emerald-400" />
+                    <span>Cloud Synced</span>
                   </>
                 ) : (
                   <>
-                    <Cloud className="w-3 h-3 text-emerald-400" />
-                    <span>Server Synced</span>
+                    <Check className="w-3 h-3 text-emerald-400" />
+                    <span>Auto-Saved</span>
                   </>
                 )}
               </button>
@@ -146,7 +148,7 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({
           {onManualSave && (
             <button
               onClick={onManualSave}
-              title="Save current board, teams & score to server"
+              title="Save current board, teams & score to permanent storage"
               className="px-2.5 py-1.5 rounded-xl bg-slate-900/80 hover:bg-emerald-950/40 border border-white/[0.08] hover:border-emerald-500/40 text-slate-300 hover:text-emerald-200 transition-all text-xs font-medium flex items-center gap-1.5 cursor-pointer shadow-sm"
             >
               <Save className="w-3.5 h-3.5 text-emerald-400" />

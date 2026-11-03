@@ -12,6 +12,7 @@ import { VictoryModal } from './components/VictoryModal';
 import { DeckManagerModal } from './components/DeckManagerModal';
 import { AIControlPanel } from './components/AIControlPanel';
 import { UserGuideModal } from './components/UserGuideModal';
+import { StorageModal } from './components/StorageModal';
 import { BOLLYWOOD_STAGE_PACK, DEFAULT_TEAMS, GamePack } from './data/defaultPacks';
 import { TileData, Team, TwistExecutionResult, isGameOver } from './game/twistRules';
 import {
@@ -25,13 +26,12 @@ import {
   getLocalCachedPacks,
   fetchServerState,
   saveStateToServer,
-  resetServerGameState,
   fetchServerCustomPacks,
   saveCustomPackToServer,
   deleteCustomPackFromServer,
   PersistedGameState,
 } from './utils/storageService';
-import { Zap, Volume2, Sparkles, Play, Award, RotateCcw, Cloud, Save } from 'lucide-react';
+import { Zap, Volume2, Sparkles, Play, Award, RotateCcw, Cloud, Save, HardDrive } from 'lucide-react';
 
 export default function App() {
   // Synchronous cache read so initial render is instantaneous without layout flicker
@@ -55,9 +55,12 @@ export default function App() {
   );
   const [selectedTile, setSelectedTile] = useState<TileData | null>(null);
 
-  // Persistence & Server Sync Status
+  // Persistence & Storage Status
   const [syncStatus, setSyncStatus] = useState<'saved' | 'saving' | 'synced' | 'error' | 'idle'>(
     'saved'
+  );
+  const [storageType, setStorageType] = useState<'cloud' | 'local'>(
+    typeof window !== 'undefined' && window.location.hostname.endsWith('github.io') ? 'local' : 'local'
   );
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(initialCache?.updatedAt || null);
   const isInitialMount = useRef(true);
@@ -69,6 +72,7 @@ export default function App() {
   const [isHostXrayActive, setIsHostXrayActive] = useState<boolean>(false);
   const [isVictoryOpen, setIsVictoryOpen] = useState<boolean>(false);
   const [isGuideOpen, setIsGuideOpen] = useState<boolean>(false);
+  const [isStorageModalOpen, setIsStorageModalOpen] = useState<boolean>(false);
 
   // High-Energy Stage Toast Notification (e.g. for twists or saves)
   const [stageToast, setStageToast] = useState<{ message: string; type: 'twist' | 'points' } | null>(
@@ -99,12 +103,16 @@ export default function App() {
     }, 4500);
   };
 
-  // 1. Initial Remote Hydration from Server (/api/state)
+  // 1. Initial Remote/Storage Hydration
   useEffect(() => {
     let isMounted = true;
     async function loadRemoteState() {
       try {
-        const serverState = await fetchServerState();
+        const { state: serverState, storageType: detectedType } = await fetchServerState();
+        if (isMounted) {
+          setStorageType(detectedType);
+        }
+
         if (serverState && isMounted) {
           if (serverState.currentPack) setCurrentPack(serverState.currentPack);
           if (serverState.tiles && serverState.tiles.length === 16) setTiles(serverState.tiles);
@@ -133,7 +141,7 @@ export default function App() {
           });
         }
       } catch (err) {
-        console.warn('Initial server state fetch failed, running from cached state:', err);
+        console.warn('Initial storage load fallback:', err);
       }
     }
 
@@ -143,9 +151,9 @@ export default function App() {
     };
   }, []);
 
-  // 2. Auto-Save Debounced Effect to Server
+  // 2. Auto-Save Debounced Effect
   useEffect(() => {
-    // Skip saving on the very first mount cycle to avoid overwriting server state with initial render
+    // Skip saving on the very first mount cycle to avoid overwriting stored state with initial render
     if (isInitialMount.current) {
       isInitialMount.current = false;
       return;
@@ -163,18 +171,15 @@ export default function App() {
       };
 
       const res = await saveStateToServer(payload);
-      if (res.success) {
-        setSyncStatus('saved');
-        setLastSavedAt(res.updatedAt);
-      } else {
-        setSyncStatus('error');
-      }
+      setSyncStatus('saved');
+      setStorageType(res.storageType);
+      setLastSavedAt(res.updatedAt);
     }, 600);
 
     return () => clearTimeout(timer);
   }, [tiles, teams, activeTeamIndex, currentPack, gameState, customPacks]);
 
-  // 3. Manual Save to Server
+  // 3. Manual Save Trigger
   const handleManualSave = async () => {
     setSyncStatus('saving');
     const payload: PersistedGameState = {
@@ -187,14 +192,28 @@ export default function App() {
     };
 
     const res = await saveStateToServer(payload);
-    if (res.success) {
-      setSyncStatus('saved');
-      setLastSavedAt(res.updatedAt);
-      triggerStageToast('💾 Stage matrix, scores, and custom edits saved to server!', 'points');
-    } else {
-      setSyncStatus('error');
-      triggerStageToast('💾 Saved to local browser cache (server offline)', 'twist');
-    }
+    setSyncStatus('saved');
+    setStorageType(res.storageType);
+    setLastSavedAt(res.updatedAt);
+
+    triggerStageToast(
+      res.storageType === 'cloud'
+        ? '☁️ Stage matrix & scores synced to Cloud Server!'
+        : '💾 Show saved! Your edits will stay intact when you refresh.',
+      'points'
+    );
+  };
+
+  // Restore State from JSON backup
+  const handleRestoreState = (restored: PersistedGameState) => {
+    if (restored.currentPack) setCurrentPack(restored.currentPack);
+    if (restored.tiles && restored.tiles.length === 16) setTiles(restored.tiles);
+    if (restored.teams && restored.teams.length >= 2) setTeams(restored.teams);
+    if (typeof restored.activeTeamIndex === 'number') setActiveTeamIndex(restored.activeTeamIndex);
+    if (restored.gameState) setGameState(restored.gameState);
+    if (restored.customPacks) setCustomPacks(restored.customPacks);
+    saveStateToServer(restored);
+    triggerStageToast('Restored show backup successfully!', 'points');
   };
 
   // Handle Tile Selection
@@ -294,7 +313,7 @@ export default function App() {
     setIsVictoryOpen(false);
     setGameState('playing');
 
-    // Immediately persist reset state to server
+    // Immediately persist reset state
     const payload: PersistedGameState = {
       currentPack,
       tiles: resetTiles,
@@ -304,7 +323,7 @@ export default function App() {
       customPacks,
     };
     await saveStateToServer(payload);
-    triggerStageToast('🔄 Game board reset & saved to server! New battle begins!', 'points');
+    triggerStageToast('🔄 Game board reset & saved! New battle begins!', 'points');
   };
 
   // Select new Pack
@@ -340,7 +359,7 @@ export default function App() {
     setActiveTeamIndex(0);
     setSelectedTile(null);
 
-    // Save pack to server backend
+    // Save pack to storage
     await saveCustomPackToServer(newPack);
     triggerStageToast(`Saved & loaded custom show: "${packName}"!`, 'twist');
   };
@@ -354,7 +373,7 @@ export default function App() {
     if (currentPack.id === packId) {
       handleSelectPack(BOLLYWOOD_STAGE_PACK);
     }
-    triggerStageToast('Custom show deleted from server', 'twist');
+    triggerStageToast('Custom show deleted from storage', 'twist');
   };
 
   // Keyboard Hotkeys Listener for the Anchor / Operator
@@ -389,6 +408,7 @@ export default function App() {
         setIsVictoryOpen(false);
         setIsAIControlOpen(false);
         setIsGuideOpen(false);
+        setIsStorageModalOpen(false);
       }
     };
 
@@ -406,7 +426,7 @@ export default function App() {
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:4rem_4rem]" />
       </div>
 
-      {/* STAGE HEADER & LIVE SCOREBOARD WITH SERVER SYNC BADGE */}
+      {/* STAGE HEADER & LIVE SCOREBOARD */}
       <Scoreboard
         teams={teams}
         activeTeamId={activeTeam.id}
@@ -421,8 +441,10 @@ export default function App() {
         currentPackName={currentPack.name}
         isHostXrayActive={isHostXrayActive}
         syncStatus={syncStatus}
+        storageType={storageType}
         lastSavedAt={lastSavedAt}
         onManualSave={handleManualSave}
+        onOpenStorageModal={() => setIsStorageModalOpen(true)}
       />
 
       {/* MAIN STAGE ARENA */}
@@ -464,12 +486,12 @@ export default function App() {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={handleManualSave}
+            onClick={() => setIsStorageModalOpen(true)}
             className="hover:text-emerald-300 text-slate-300 font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
-            title="Force save all matrix changes to server"
+            title="View storage, export backup or configure cloud sync"
           >
             <Save className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Save to Server</span>
+            <span>{storageType === 'cloud' ? 'Cloud Synced' : 'Auto-Saved'}</span>
           </button>
           <span className="text-slate-700">·</span>
           <button
@@ -497,6 +519,26 @@ export default function App() {
           </button>
         </div>
       </footer>
+
+      {/* STORAGE & CLOUD SETTINGS MODAL */}
+      <StorageModal
+        isOpen={isStorageModalOpen}
+        onClose={() => setIsStorageModalOpen(false)}
+        storageType={storageType}
+        lastSavedAt={lastSavedAt}
+        currentGameState={{
+          currentPack,
+          tiles,
+          teams,
+          activeTeamIndex,
+          gameState,
+          customPacks,
+          updatedAt: lastSavedAt || undefined,
+        }}
+        onManualSave={handleManualSave}
+        onRestoreState={handleRestoreState}
+        onResetBoard={handleResetBoard}
+      />
 
       {/* QUESTION / TWIST MODAL */}
       {selectedTile && (
@@ -526,7 +568,7 @@ export default function App() {
         teams={teams}
         onUpdateTeams={(newTeams) => {
           setTeams(newTeams);
-          triggerStageToast('Teams updated and saved to server!', 'points');
+          triggerStageToast('Teams updated and saved!', 'points');
         }}
         onResetBoard={handleResetBoard}
         onApplyCustomTiles={handleApplyCustomTiles}
@@ -549,7 +591,7 @@ export default function App() {
         tiles={tiles}
         onUpdateTiles={(updated) => {
           setTiles(updated);
-          triggerStageToast('Tiles updated and saved to server!', 'points');
+          triggerStageToast('Tiles updated and saved!', 'points');
         }}
         isHostXrayActive={isHostXrayActive}
         onToggleHostXray={() => setIsHostXrayActive((prev) => !prev)}
